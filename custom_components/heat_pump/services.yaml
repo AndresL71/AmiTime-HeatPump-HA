@@ -1,0 +1,21 @@
+turn_on:
+  name: Turn On Heat Pump
+  description: Turns on the heat pump.
+  fields:
+    entity_id:
+      name: Entity ID
+      description: The heat pump entity to turn on.
+      selector:
+        entity:
+          domain: switch
+          
+turn_off:
+  name: Turn Off Heat Pump
+  description: Turns off the heat pump.
+  fields:
+    entity_id:
+      name: Entity ID
+      description: The heat pump entity to turn off.
+      selector:
+        entity:
+          domain: switch
