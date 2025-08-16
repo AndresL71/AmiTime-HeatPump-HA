@@ -1,0 +1,9 @@
+{
+  "domain": "heat_pump",
+  "name": "Heat Pump",
+  "documentation": "https://github.com/AndresL71/AmiTime-HeatPump_HA",
+  "issue_tracker": "https://github.com/AndresL71/AmiTime-HeatPump_HA/issues",
+  "codeowners": ["@AndresL71"],
+  "version": "1.0.0",
+  "requirements": []
+}
