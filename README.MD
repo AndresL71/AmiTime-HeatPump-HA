@@ -2,7 +2,7 @@
 Via HACS
 
 
-in HA cinficuration.yaml
+in HA configuration.yaml
 
 heat_pump:
   host: "192.168.1.10"
