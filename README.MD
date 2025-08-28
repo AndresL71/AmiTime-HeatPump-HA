@@ -3,6 +3,7 @@ Not able to write values still
 
 #  heatpump.py
 
+
 # modify in script :
 
 your MAC address
@@ -15,15 +16,15 @@ MQTT address and name/password
 
 
 # Configuration
-HEATPUMP_IP = "10.0.0.73"
-HEATPUMP_PORT = 8899
-HEATPUMP_MAC = "xx xx xx xx xx xx"
+	HEATPUMP_IP = "10.0.0.73"
+	HEATPUMP_PORT = 8899
+	HEATPUMP_MAC = "xx xx xx xx xx xx"
 
 # MQTT Configuration
-MQTT_BROKER = "localhost"
-MQTT_PORT = 1883
-MQTT_USER = "addons"
-MQTT_PASSWORD = ""
+	MQTT_BROKER = "localhost"
+	MQTT_PORT = 1883
+	MQTT_USER = "addons"
+	MQTT_PASSWORD = ""
 
 
 
