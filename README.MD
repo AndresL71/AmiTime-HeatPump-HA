@@ -5,7 +5,8 @@ Via HACS
 in HA configuration.yaml
 
 heat_pump:
-  
-  host: "192.168.1.10"
-  
-  port: 8888
+modify in script :
+your MAC address
+Your usr-c210 ip
+your usr-c210 open port (TCP server)
+
