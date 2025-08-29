@@ -1,7 +1,8 @@
 For AmiTime Heatpump, Monoblock, R32
 such as: PAVH15/19 -- mutiple vendors, HeatThermo Hoffmann, Recal --  
 
-reading most sensors, and set temperatures.
+reading most sensors, and set temperatures locally, directly from the Pumps Wifi using the serial port provided in the usr-c210 configurationpage as socket A, TCP server.
+Without having to go to  www.myheatpump.com.
 Not able to write values still
 
 #  heatpump.py
