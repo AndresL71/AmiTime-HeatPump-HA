@@ -1,5 +1,5 @@
 For AmiTime Heatpump, Monoblock, R32
-such as: PAVH15/19 -- mutiple vendos, HeatThermo Hoffmann, Recal --  
+such as: PAVH15/19 -- mutiple vendors, HeatThermo Hoffmann, Recal --  
 
 reading most sensors, and set temperatures.
 Not able to write values still
