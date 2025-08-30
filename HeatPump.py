@@ -364,10 +364,10 @@ def analyze_0143_packet(parameters):
     
     # Status flags
     log("Status Flags:")
-    dhw_state = decode_uint8(parameters[OFFSETS['dhw_state']]) if OFFSETS['dhw_state'] < len(parameters) else None #antes decode_bool
+    dhw_state = decode_bool(parameters[OFFSETS['dhw_state']]) if OFFSETS['dhw_state'] < len(parameters) else None
     heat_state = decode_bool(parameters[OFFSETS['heating_state']]) if OFFSETS['heating_state'] < len(parameters) else None
     cool_state = decode_bool(parameters[OFFSETS['cooling_state']]) if OFFSETS['cooling_state'] < len(parameters) else None
-    defrost_state = decode_uint8(parameters[OFFSETS['defrost_state']]) if OFFSETS['defrost_state'] < len(parameters) else None #antes era decode_bool
+    defrost_state = decode_bool(parameters[OFFSETS['defrost_state']]) if OFFSETS['defrost_state'] < len(parameters) else None
     unit_mode = decode_uint8(parameters[OFFSETS['outdoor_unit_mode']]) if OFFSETS['outdoor_unit_mode'] < len(parameters) else None
     
     if dhw_state is not None:
