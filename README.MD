@@ -30,5 +30,38 @@ MQTT address and name/password
 	MQTT_USER = "addons"
 	MQTT_PASSWORD = ""
 
+#Offsets
+	
+	Offsets 01b3
+
+Unit ON OFF：at 2 (1=on 0=off)
+Working Mode: at 6 -- (1=DHW, 2=heating, 3=cooling)
+Delta T to start compressor speed regulation：at 18
+Low noise mode ON/OFF：at 66 (1=on 0=off)
+
+Heating set Temp: 246 
+Delta of Heating: 250
+
+Heating Curve: 330 (1=on 0=off)
+Heating curve ambient temp. 1 at 338
+Heating curve water temp. 1 at 342
+Heating curve ambient temp. 2 at 346
+Heating curve water temp. 2 at 350
+Heating curve ambient temp. 3 at 354
+Heating curve water temp. 3 at 358
+Heating curve ambient temp. 3 at 362
+Heating curve water temp. 3 at 366
+Heating curve ambient temp. 2 at 346
+Heating curve water temp. 2 at 350
+
+DHW set temp.：at 166
+Delta T of DHW：at 170
+Shifting priority DHW Min. working time：190
+Shifting priority ambient start temp.：at 306
+Shifting priority delta T of heating：314
+Shifting priority heating working time：318
+
+Cooling set temp.：at 378
+Delta T of cooling：at 382
 
 
