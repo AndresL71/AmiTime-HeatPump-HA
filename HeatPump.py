@@ -6,15 +6,15 @@ import paho.mqtt.client as mqtt
 import json
 
 # Configuration
-HEATPUMP_IP = "10.0.0.73"
+HEATPUMP_IP = ""
 HEATPUMP_PORT = 8899
-HEATPUMP_MAC = "xx xx xx xx xx xx"
+HEATPUMP_MAC = "XX XX XX XX XX XX"
 
 # MQTT Configuration
 MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
 MQTT_USER = "addons"
-MQTT_PASSWORD = ""
+MQTT_PASSWORD = "yourpasswordhere"
 DEVICE_ID = "heatpump_001"
 DEVICE_NAME = "Heat Pump"
 MANUFACTURER = "Unknown"
@@ -24,7 +24,7 @@ MODEL = "Unknown"
 MQTT_TOPIC_PREFIX = f"homeassistant/sensor/{DEVICE_ID}"
 MQTT_AVAILABILITY_TOPIC = f"{MQTT_TOPIC_PREFIX}/availability"
 
-# Updated offsets from your discovery
+# Updated offsets with all corrections
 OFFSETS = {
     # Temperatures
     'outdoor_temp': 10,
@@ -48,17 +48,50 @@ OFFSETS = {
     'low_pressure': 278,
     'high_pressure': 282,
     
-    # Status flags
-    'outdoor_unit_mode': 210,
-    'dhw_state': 146,
-    'heating_state': 150,
-    'cooling_state': 154,
-    'defrost_state': 162,
+    # Status flags (0143 packet)
+    'outdoor_unit_mode': 186,
+    'dhw_state': 174,
+    'heating_state': 178,
+    'cooling_state': 182,
+    'defrost_state': 286,
     
-    # Set temperatures (to be found)
+    # Set temperatures
     'dhw_set_temp': 166,
     'heating_set_temp': 246,
     'cooling_set_temp': 378,
+    
+    # 01B3 packet offsets
+    'unit_on_off': 2,      # Como float (1.0 = ON, 0.0 = OFF)
+    'working_mode': 6,     # Como float (1.0 = DHW, 2.0 = Heating, 3.0 = Cooling)
+    'delta_t_compressor_speed': 18,
+    'low_noise_mode': 66,  # Como float (1.0 = ON, 0.0 = OFF)
+    'heating_delta_t': 250,
+    'heating_curve_enabled': 330,  # Como float (1.0 = ON, 0.0 = OFF)
+    'heating_curve_ambient_temp_1': 338,
+    'heating_curve_water_temp_1': 342,
+    'heating_curve_ambient_temp_2': 346,
+    'heating_curve_water_temp_2': 350,
+    'heating_curve_ambient_temp_3': 354,
+    'heating_curve_water_temp_3': 358,
+    'heating_curve_ambient_temp_4': 362,
+    'heating_curve_water_temp_4': 366,
+    'dhw_delta_t': 170,
+    'cooling_delta_t': 382,
+    
+    # Priority settings - CHANGED TO 4-BYTE FLOATS
+    'dhw_priority_min_time': 190,  # Now as 4-byte float
+    'priority_ambient_start_temp': 306,
+    'priority_heating_delta_t': 314,
+    'priority_heating_working_time': 318,  # Now as 4-byte float
+    
+    # Aliases for sensor naming consistency
+    'dhw_delta_temp': 170,
+    'heating_delta_temp': 250,
+    'cooling_delta_temp': 382,
+    'shifting_priority_dhw_min_time': 190,  # Alias for dhw_priority_min_time
+    'shifting_priority_ambient_start_temp': 306,
+    'shifting_priority_heating_delta_temp': 314,
+    'shifting_priority_heating_working_time': 318,  # Alias for priority_heating_working_time
 }
 
 # MQTT Client
@@ -88,7 +121,7 @@ def publish_mqtt_discovery():
     if not mqtt_client:
         return
     
-    # Sensor configurations
+    # Sensor configurations - updated with consistent naming
     sensors = {
         # Temperature sensors
         'outdoor_temp': {
@@ -188,34 +221,15 @@ def publish_mqtt_discovery():
             'state_class': 'measurement'
         },
         
-        # Binary sensors
-        'dhw_state': {
-            'name': 'DHW State',
-            'device_class': 'running',
-            'payload_on': 'true',
-            'payload_off': 'false'
-        },
-        'heating_state': {
-            'name': 'Heating State',
-            'device_class': 'heat',
-            'payload_on': 'true',
-            'payload_off': 'false'
-        },
-        'cooling_state': {
-            'name': 'Cooling State',
-            'device_class': 'cold',
-            'payload_on': 'true',
-            'payload_off': 'false'
-        },
-        'defrost_state': {
-            'name': 'Defrost State',
-            'device_class': 'running',
-            'payload_on': 'true',
-            'payload_off': 'false'
-        },
-        # Set temperature sensors (added)
+        # Set temperature sensors (01B3 packet)
         'dhw_set_temp': {
             'name': 'DHW Set Temperature',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
+        'dhw_delta_temp': {
+            'name': 'DHW Delta Temperature',
             'unit': 'Â°C',
             'device_class': 'temperature',
             'state_class': 'measurement'
@@ -226,20 +240,154 @@ def publish_mqtt_discovery():
             'device_class': 'temperature',
             'state_class': 'measurement'
         },
+        'heating_delta_temp': {
+            'name': 'Heating Delta Temperature',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
         'cooling_set_temp': {
             'name': 'Cooling Set Temperature',
             'unit': 'Â°C',
             'device_class': 'temperature',
             'state_class': 'measurement'
         },
+        'cooling_delta_temp': {
+            'name': 'Cooling Delta Temperature',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
         
-        # Unit mode sensor
+        # Heating curve sensors (01B3 packet)
+        'heating_curve_ambient_temp_1': {
+            'name': 'Heating Curve Ambient Temp 1',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
+        'heating_curve_water_temp_1': {
+            'name': 'Heating Curve Water Temp 1',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
+        'heating_curve_ambient_temp_2': {
+            'name': 'Heating Curve Ambient Temp 2',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
+        'heating_curve_water_temp_2': {
+            'name': 'Heating Curve Water Temp 2',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
+        'heating_curve_ambient_temp_3': {
+            'name': 'Heating Curve Ambient Temp 3',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
+        'heating_curve_water_temp_3': {
+            'name': 'Heating Curve Water Temp 3',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
+        
+        # Priority settings (01B3 packet) - UPDATED FOR FLOAT VALUES
+        'shifting_priority_ambient_start_temp': {
+            'name': 'Priority Ambient Start Temp',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
+        'shifting_priority_heating_delta_temp': {
+            'name': 'Priority Heating Delta Temp',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
+        
+        # Time settings - UPDATED FOR FLOAT VALUES
+        'shifting_priority_dhw_min_time': {
+            'name': 'DHW Minimum Working Time',
+            'unit': 'min',
+            'state_class': 'measurement'
+        },
+        'priority_heating_working_time': {
+            'name': 'Heating Working Time',
+            'unit': 'min',
+            'state_class': 'measurement'
+        },
+        
+        # Delta T sensor
+        'delta_t_compressor_speed': {
+            'name': 'Delta T Compressor Speed',
+            'unit': 'Â°C',
+            'device_class': 'temperature',
+            'state_class': 'measurement'
+        },
+        
+        # Mode sensors
         'outdoor_unit_mode': {
             'name': 'Outdoor Unit Mode',
             'state_class': 'measurement'
-        }
+        },
+        'working_mode': {
+            'name': 'Working Mode',
+            'state_class': 'measurement'
+        },
     }
-    
+
+    # Binary sensors
+    binary_sensors = {
+        'dhw_state': {
+            'name': 'DHW Working State',
+            'device_class': 'running',
+            'payload_on': 'true',
+            'payload_off': 'false'
+        },
+        'heating_state': {
+            'name': 'Heating Working State',
+            'device_class': 'heat',
+            'payload_on': 'true',
+            'payload_off': 'false'
+        },
+        'cooling_state': {
+            'name': 'Cooling Working State',
+            'device_class': 'cold',
+            'payload_on': 'true',
+            'payload_off': 'false'
+        },
+        'defrost_state': {
+            'name': 'Defrost State',
+            'device_class': 'problem',
+            'payload_on': 'true',
+            'payload_off': 'false'
+        },
+        'unit_on_off': {
+            'name': 'Unit On/Off',
+            'device_class': 'power',
+            'payload_on': '1',
+            'payload_off': '0'
+        },
+        'low_noise_mode': {
+            'name': 'Low Noise Mode',
+            'device_class': 'sound',
+            'payload_on': '1',
+            'payload_off': '0'
+        },
+        'heating_curve_enabled': {
+            'name': 'Heating Curve Enabled',
+            'device_class': 'power',
+            'payload_on': '1',
+            'payload_off': '0'
+        },
+    }
+
     # Device information
     device_info = {
         "identifiers": [DEVICE_ID],
@@ -251,43 +399,55 @@ def publish_mqtt_discovery():
     
     # Publish discovery config for each sensor
     for sensor_id, config in sensors.items():
-        if OFFSETS[sensor_id] is None:
+        if sensor_id not in OFFSETS or OFFSETS[sensor_id] is None:
+            log(f"Skipping {sensor_id} - no offset defined")
             continue
             
         topic = f"{MQTT_TOPIC_PREFIX}/{sensor_id}/config"
         
-        if 'device_class' in config and config['device_class'] in ['running', 'heat', 'cold']:
-            # Binary sensor
-            payload = {
-                "name": config['name'],
-                "device_class": config['device_class'],
-                "state_topic": f"{MQTT_TOPIC_PREFIX}/{sensor_id}/state",
-                "availability_topic": MQTT_AVAILABILITY_TOPIC,
-                "payload_on": config['payload_on'],
-                "payload_off": config['payload_off'],
-                "device": device_info,
-                "unique_id": f"{DEVICE_ID}_{sensor_id}"
-            }
-        else:
-            # Regular sensor
-            payload = {
-                "name": config['name'],
-                "state_topic": f"{MQTT_TOPIC_PREFIX}/{sensor_id}/state",
-                "availability_topic": MQTT_AVAILABILITY_TOPIC,
-                "device": device_info,
-                "unique_id": f"{DEVICE_ID}_{sensor_id}"
-            }
-            
-            if 'unit' in config:
-                payload["unit_of_measurement"] = config['unit']
-            if 'device_class' in config:
-                payload["device_class"] = config['device_class']
-            if 'state_class' in config:
-                payload["state_class"] = config['state_class']
+        # Regular sensor
+        payload = {
+            "name": config['name'],
+            "state_topic": f"{MQTT_TOPIC_PREFIX}/{sensor_id}/state",
+            "availability_topic": MQTT_AVAILABILITY_TOPIC,
+            "device": device_info,
+            "unique_id": f"{DEVICE_ID}_{sensor_id}"
+        }
+        
+        if 'unit' in config:
+            payload["unit_of_measurement"] = config['unit']
+        if 'device_class' in config:
+            payload["device_class"] = config['device_class']
+        if 'state_class' in config:
+            payload["state_class"] = config['state_class']
         
         mqtt_client.publish(topic, json.dumps(payload), retain=True)
         log(f"Published discovery config for {sensor_id}")
-        time.sleep(0.1)  # Small delay to avoid overwhelming the broker
+        time.sleep(0.1)
+    
+    # Publish discovery config for each binary sensor
+    for sensor_id, config in binary_sensors.items():
+        if sensor_id not in OFFSETS or OFFSETS[sensor_id] is None:
+            log(f"Skipping binary sensor {sensor_id} - no offset defined")
+            continue
+            
+        topic = f"{MQTT_TOPIC_PREFIX}/{sensor_id}/config"
+        
+        payload = {
+            "name": config['name'],
+            "device_class": config['device_class'],
+            "state_topic": f"{MQTT_TOPIC_PREFIX}/{sensor_id}/state",
+            "availability_topic": MQTT_AVAILABILITY_TOPIC,
+            "payload_on": config['payload_on'],
+            "payload_off": config['payload_off'],
+            "device": device_info,
+            "unique_id": f"{DEVICE_ID}_{sensor_id}_binary"
+        }
+        
+        mqtt_client.publish(topic, json.dumps(payload), retain=True)
+        log(f"Published discovery config for binary sensor {sensor_id}")
+        time.sleep(0.1)
+
 
 def publish_mqtt_state(sensor_id, value):
     """Publish sensor state to MQTT"""
@@ -317,9 +477,37 @@ def decode_uint8(byte_data):
     except:
         return None
 
+def decode_int16(bytes_data):
+    """Decode 2-byte little-endian signed integer"""
+    try:
+        return struct.unpack('<h', bytes_data)[0]
+    except:
+        return None
+
+def decode_uint16(bytes_data):
+    """Decode 2-byte little-endian unsigned integer"""
+    try:
+        return struct.unpack('<H', bytes_data)[0]
+    except:
+        return None
+
+def debug_raw_data(parameters, offset, length=4, description=""):
+    """Debug function to show raw data at specific offset"""
+    if offset + length <= len(parameters):
+        raw_data = parameters[offset:offset+length]
+        log(f"DEBUG {description} at offset {offset}: {raw_data.hex()}")
+        return raw_data
+    return None
+
 def analyze_0143_packet(parameters):
     """Analyze 0143 packet with all known offsets"""
     log("=== 0143 Packet Analysis ===")
+    
+    # Debug: mostrar datos crudos en offsets importantes
+    debug_raw_data(parameters, OFFSETS['dhw_state'], 1, "DHW State raw")
+    debug_raw_data(parameters, OFFSETS['heating_state'], 1, "Heating State raw")
+    debug_raw_data(parameters, OFFSETS['cooling_state'], 1, "Cooling State raw")
+    debug_raw_data(parameters, OFFSETS['defrost_state'], 1, "Defrost State raw")
     
     # Temperature readings
     log("Temperatures:")
@@ -362,35 +550,57 @@ def analyze_0143_packet(parameters):
         log(f"  High Pressure: {high_press:.1f}bar")
         publish_mqtt_state('high_pressure', high_press)
     
-    # Status flags
+    # Status flags - INTENTAR COMO FLOAT PRIMERO
     log("Status Flags:")
-    dhw_state = decode_bool(parameters[OFFSETS['dhw_state']]) if OFFSETS['dhw_state'] < len(parameters) else None
-    heat_state = decode_bool(parameters[OFFSETS['heating_state']]) if OFFSETS['heating_state'] < len(parameters) else None
-    cool_state = decode_bool(parameters[OFFSETS['cooling_state']]) if OFFSETS['cooling_state'] < len(parameters) else None
-    defrost_state = decode_bool(parameters[OFFSETS['defrost_state']]) if OFFSETS['defrost_state'] < len(parameters) else None
-    unit_mode = decode_uint8(parameters[OFFSETS['outdoor_unit_mode']]) if OFFSETS['outdoor_unit_mode'] < len(parameters) else None
     
-    if dhw_state is not None:
-        log(f"  DHW State: {'ON' if dhw_state else 'OFF'}")
-        publish_mqtt_state('dhw_state', str(dhw_state).lower())
-    if heat_state is not None:
-        log(f"  Heating State: {'ON' if heat_state else 'OFF'}")
-        publish_mqtt_state('heating_state', str(heat_state).lower())
-    if cool_state is not None:
-        log(f"  Cooling State: {'ON' if cool_state else 'OFF'}")
-        publish_mqtt_state('cooling_state', str(cool_state).lower())
-    if defrost_state is not None:
-        log(f"  Defrost State: {'ON' if defrost_state else 'OFF'}")
-        publish_mqtt_state('defrost_state', str(defrost_state).lower())
-    if unit_mode is not None:
-        log(f"  Unit Mode: {unit_mode}")
-        publish_mqtt_state('outdoor_unit_mode', unit_mode)
+    # Intentar leer como floats de 4 bytes
+    if OFFSETS['dhw_state'] + 4 <= len(parameters):
+        dhw_state_float = decode_float(parameters[OFFSETS['dhw_state']:OFFSETS['dhw_state']+4])
+        if dhw_state_float is not None:
+            log(f"  DHW State (float): {'ON' if dhw_state_float == 1.0 else 'OFF'} (raw: {dhw_state_float})")
+            publish_mqtt_state('dhw_state', 'true' if dhw_state_float == 1.0 else 'false')
+    
+    if OFFSETS['heating_state'] + 4 <= len(parameters):
+        heating_state_float = decode_float(parameters[OFFSETS['heating_state']:OFFSETS['heating_state']+4])
+        if heating_state_float is not None:
+            log(f"  Heating State (float): {'ON' if heating_state_float == 1.0 else 'OFF'} (raw: {heating_state_float})")
+            publish_mqtt_state('heating_state', 'true' if heating_state_float == 1.0 else 'false')
+    
+    if OFFSETS['cooling_state'] + 4 <= len(parameters):
+        cooling_state_float = decode_float(parameters[OFFSETS['cooling_state']:OFFSETS['cooling_state']+4])
+        if cooling_state_float is not None:
+            log(f"  Cooling State (float): {'ON' if cooling_state_float == 1.0 else 'OFF'} (raw: {cooling_state_float})")
+            publish_mqtt_state('cooling_state', 'true' if cooling_state_float == 1.0 else 'false')
+    
+    if OFFSETS['defrost_state'] + 4 <= len(parameters):
+        defrost_state_float = decode_float(parameters[OFFSETS['defrost_state']:OFFSETS['defrost_state']+4])
+        if defrost_state_float is not None:
+            log(f"  Defrost State (float): {'ON' if defrost_state_float == 1.0 else 'OFF'} (raw: {defrost_state_float})")
+            publish_mqtt_state('defrost_state', 'true' if defrost_state_float == 1.0 else 'false')
+    
+    # TambiÃƒÂ©n intentar como byte individual (backup)
+    if OFFSETS['dhw_state'] < len(parameters):
+        dhw_state_byte = decode_uint8(parameters[OFFSETS['dhw_state']])
+        if dhw_state_byte is not None:
+            log(f"  DHW State (byte): {'ON' if dhw_state_byte else 'OFF'} (raw: {dhw_state_byte})")
+    
+    if OFFSETS['outdoor_unit_mode'] < len(parameters):
+        unit_mode = decode_uint8(parameters[OFFSETS['outdoor_unit_mode']])
+        if unit_mode is not None:
+            log(f"  Unit Mode: {unit_mode}")
+            publish_mqtt_state('outdoor_unit_mode', unit_mode)
 
 def analyze_01b3_packet(parameters):
-    """Analyze 01B3 packet to find set temperatures"""
+    """Analyze 01B3 packet with all known offsets - CORREGIDO PARA FLOATS"""
     log("=== 01B3 Packet Analysis ===")
     
-    # Read set temperatures from known offsets
+    # Debug: mostrar datos crudos en offsets importantes
+    debug_raw_data(parameters, OFFSETS['unit_on_off'], 4, "Unit On/Off raw")
+    debug_raw_data(parameters, OFFSETS['working_mode'], 4, "Working Mode raw")
+    debug_raw_data(parameters, OFFSETS['low_noise_mode'], 4, "Low Noise Mode raw")
+    debug_raw_data(parameters, OFFSETS['heating_curve_enabled'], 4, "Heating Curve Enabled raw")
+    
+    # Read set temperatures
     set_temps = {
         'dhw_set_temp': OFFSETS['dhw_set_temp'],
         'heating_set_temp': OFFSETS['heating_set_temp'],
@@ -403,34 +613,118 @@ def analyze_01b3_packet(parameters):
             if value is not None:
                 log(f"  {name.replace('_', ' ').title()}: {value:.1f}Â°C")
                 publish_mqtt_state(name, value)
-#def analyze_01b3_packet(parameters):
-    """Analyze 01B3 packet to find set temperatures"""
-#    log("=== 01B3 Packet Analysis ===")
-#    log("Searching for set temperatures (fixed values around 48, 55, 12Â°C):")
     
-    # Look for the set temperatures in 01B3 packets
-#    set_temp_candidates = []
- #   for i in range(0, len(parameters) - 3):
-#       value = decode_float(parameters[i:i+4])
-#        if value is not None and value in [12.0, 48.0, 55.0]:
-#            set_temp_candidates.append((i, value))
-#    
-#    if set_temp_candidates:
-#        for offset, value in set_temp_candidates:
-#            log(f"  Set temp candidate at {offset}: {value}Â°C")
-            
-            # Try to identify which set temperature this is
-#            if value == 47.0:
-#                OFFSETS['dhw_set_temp'] = offset
-#                log(f"    â†’ Likely DHW Set Temperature")
-#            elif value == 55.0:
-#                OFFSETS['heating_set_temp'] = offset
-#                log(f"    â†’ Likely Heating Set Temperature")
-#            elif value == 12.0:
-#                OFFSETS['cooling_set_temp'] = offset
-#                log(f"    â†’ Likely Cooling Set Temperature")
-#    else:
-#        log("  No set temperature values found")
+    # Unit status - LEER COMO FLOATS
+    log("Unit Status:")
+    
+    # Para unit_on_off (offset 2) - como float
+    if OFFSETS['unit_on_off'] + 4 <= len(parameters):
+        unit_on_off = decode_float(parameters[OFFSETS['unit_on_off']:OFFSETS['unit_on_off']+4])
+        if unit_on_off is not None:
+            log(f"  Unit On/Off: {'ON' if unit_on_off == 1.0 else 'OFF'} (raw: {unit_on_off})")
+            publish_mqtt_state('unit_on_off', 1 if unit_on_off == 1.0 else 0)
+    
+    # Para working_mode (offset 6) - como float
+    if OFFSETS['working_mode'] + 4 <= len(parameters):
+        working_mode = decode_float(parameters[OFFSETS['working_mode']:OFFSETS['working_mode']+4])
+        if working_mode is not None:
+            mode_names = {1.0: 'DHW', 2.0: 'Heating', 3.0: 'Cooling'}
+            mode_name = mode_names.get(working_mode, f'Unknown ({working_mode})')
+            log(f"  Working Mode: {mode_name} (raw: {working_mode})")
+            publish_mqtt_state('working_mode', int(working_mode))
+    
+    # Para low_noise_mode (offset 66) - como float
+    if OFFSETS['low_noise_mode'] + 4 <= len(parameters):
+        low_noise_mode = decode_float(parameters[OFFSETS['low_noise_mode']:OFFSETS['low_noise_mode']+4])
+        if low_noise_mode is not None:
+            log(f"  Low Noise Mode: {'ON' if low_noise_mode == 1.0 else 'OFF'} (raw: {low_noise_mode})")
+            publish_mqtt_state('low_noise_mode', 1 if low_noise_mode == 1.0 else 0)
+    
+    # Para heating_curve_enabled (offset 330) - como float
+    if OFFSETS['heating_curve_enabled'] + 4 <= len(parameters):
+        heating_curve_enabled = decode_float(parameters[OFFSETS['heating_curve_enabled']:OFFSETS['heating_curve_enabled']+4])
+        if heating_curve_enabled is not None:
+            log(f"  Heating Curve Enabled: {'ON' if heating_curve_enabled == 1.0 else 'OFF'} (raw: {heating_curve_enabled})")
+            publish_mqtt_state('heating_curve_enabled', 1 if heating_curve_enabled == 1.0 else 0)
+    
+    # Resto del anÃƒÂ¡lisis (delta T, curva de calefacciÃƒÂ³n, prioridades)
+    # Delta T values
+    log("Delta T Values:")
+    delta_t_compressor = decode_float(parameters[OFFSETS['delta_t_compressor_speed']:OFFSETS['delta_t_compressor_speed']+4])
+    heating_delta_t = decode_float(parameters[OFFSETS['heating_delta_t']:OFFSETS['heating_delta_t']+4])
+    dhw_delta_t = decode_float(parameters[OFFSETS['dhw_delta_t']:OFFSETS['dhw_delta_t']+4])
+    cooling_delta_t = decode_float(parameters[OFFSETS['cooling_delta_t']:OFFSETS['cooling_delta_t']+4])
+    
+    if delta_t_compressor is not None:
+        log(f"  Delta T Compressor Speed: {delta_t_compressor:.1f}Â°C")
+        publish_mqtt_state('delta_t_compressor_speed', delta_t_compressor)
+    if heating_delta_t is not None:
+        log(f"  Heating Delta T: {heating_delta_t:.1f}Â°C")
+        publish_mqtt_state('heating_delta_t', heating_delta_t)
+        publish_mqtt_state('heating_delta_temp', heating_delta_t)
+    if dhw_delta_t is not None:
+        log(f"  DHW Delta T: {dhw_delta_t:.1f}Â°C")
+        publish_mqtt_state('dhw_delta_t', dhw_delta_t)
+        publish_mqtt_state('dhw_delta_temp', dhw_delta_t)
+    if cooling_delta_t is not None:
+        log(f"  Cooling Delta T: {cooling_delta_t:.1f}Â°C")
+        publish_mqtt_state('cooling_delta_t', cooling_delta_t)
+        publish_mqtt_state('cooling_delta_temp', cooling_delta_t)
+    
+    # Heating curve parameters
+    log("Heating Curve Parameters:")
+    heating_curve_params = {
+        'heating_curve_ambient_temp_1': OFFSETS['heating_curve_ambient_temp_1'],
+        'heating_curve_water_temp_1': OFFSETS['heating_curve_water_temp_1'],
+        'heating_curve_ambient_temp_2': OFFSETS['heating_curve_ambient_temp_2'],
+        'heating_curve_water_temp_2': OFFSETS['heating_curve_water_temp_2'],
+        'heating_curve_ambient_temp_3': OFFSETS['heating_curve_ambient_temp_3'],
+        'heating_curve_water_temp_3': OFFSETS['heating_curve_water_temp_3'],
+        'heating_curve_ambient_temp_4': OFFSETS['heating_curve_ambient_temp_4'],
+        'heating_curve_water_temp_4': OFFSETS['heating_curve_water_temp_4'],
+    }
+    
+    for name, offset in heating_curve_params.items():
+        if offset is not None and offset + 4 <= len(parameters):
+            value = decode_float(parameters[offset:offset+4])
+            if value is not None:
+                log(f"  {name.replace('_', ' ').title()}: {value:.1f}Â°C")
+                publish_mqtt_state(name, value)
+    
+    # Priority settings - UPDATED TO USE 4-BYTE FLOATS
+    log("Priority Settings:")
+    
+    # dhw_priority_min_time (offset 190, 4 bytes as float)
+    if OFFSETS['dhw_priority_min_time'] + 4 <= len(parameters):
+        dhw_priority_min_time = decode_float(parameters[OFFSETS['dhw_priority_min_time']:OFFSETS['dhw_priority_min_time']+4])
+        if dhw_priority_min_time is not None:
+            log(f"  DHW Priority Min Time: {dhw_priority_min_time:.1f} min")
+            publish_mqtt_state('dhw_priority_min_time', dhw_priority_min_time)
+            publish_mqtt_state('shifting_priority_dhw_min_time', dhw_priority_min_time)
+    
+    # priority_ambient_start_temp (offset 306, 4 bytes)
+    if OFFSETS['priority_ambient_start_temp'] + 4 <= len(parameters):
+        priority_ambient_start_temp = decode_float(parameters[OFFSETS['priority_ambient_start_temp']:OFFSETS['priority_ambient_start_temp']+4])
+        if priority_ambient_start_temp is not None:
+            log(f"  Priority Ambient Start Temp: {priority_ambient_start_temp:.1f}Â°C")
+            publish_mqtt_state('priority_ambient_start_temp', priority_ambient_start_temp)
+            publish_mqtt_state('shifting_priority_ambient_start_temp', priority_ambient_start_temp)
+    
+    # priority_heating_delta_t (offset 314, 4 bytes)
+    if OFFSETS['priority_heating_delta_t'] + 4 <= len(parameters):
+        priority_heating_delta_t = decode_float(parameters[OFFSETS['priority_heating_delta_t']:OFFSETS['priority_heating_delta_t']+4])
+        if priority_heating_delta_t is not None:
+            log(f"  Priority Heating Delta T: {priority_heating_delta_t:.1f}Â°C")
+            publish_mqtt_state('priority_heating_delta_t', priority_heating_delta_t)
+            publish_mqtt_state('shifting_priority_heating_delta_temp', priority_heating_delta_t)
+    
+    # priority_heating_working_time (offset 318, 4 bytes as float)
+    if OFFSETS['priority_heating_working_time'] + 4 <= len(parameters):
+        priority_heating_working_time = decode_float(parameters[OFFSETS['priority_heating_working_time']:OFFSETS['priority_heating_working_time']+4])
+        if priority_heating_working_time is not None:
+            log(f"  Priority Heating Working Time: {priority_heating_working_time:.1f} min")
+            publish_mqtt_state('priority_heating_working_time', priority_heating_working_time)
+            publish_mqtt_state('shifting_priority_heating_working_time', priority_heating_working_time)
 
 def monitor_heatpump():
     """Monitor heat pump and decode all known parameters"""
@@ -468,7 +762,7 @@ def monitor_heatpump():
     except Exception as e:
         log(f"Monitoring stopped: {e}")
         if mqtt_client:
-            mqtt_client.publish(MQTT_AVAILABILITY_TOPIC, "offline", retain=True)
+            mqtt_client.publish(MQTT_AVAILABILITY_TOPIC, "online", retain=True)
     finally:
         if sock:
             sock.close()
@@ -477,13 +771,14 @@ def capture_specific_packet(packet_type):
     """Capture a specific packet type"""
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(10)
+        sock.settimeout(30)
         sock.connect((HEATPUMP_IP, HEATPUMP_PORT))
         
         target_command = 0x01 if packet_type == "0143" else 0x02
         
         log(f"Waiting for {packet_type} packet...")
-        while True:
+        start_time = time.time()
+        while time.time() - start_time < 30:  # 30 second timeout
             data = sock.recv(1024)
             if data and len(data) >= 13 and data[12] == target_command:
                 log(f"Received {packet_type} packet: {len(data)} bytes")
@@ -494,7 +789,9 @@ def capture_specific_packet(packet_type):
                 else:
                     analyze_01b3_packet(parameters)
                 
-                break
+                return
+                
+        log(f"Timeout waiting for {packet_type} packet")
                 
     except Exception as e:
         log(f"Error: {e}")
@@ -532,7 +829,7 @@ def main():
             
         elif choice == "3":
             print("\n" + "="*60)
-            log("Capturing 01B3 packet to find set temperatures...")
+            log("Capturing 01B3 packet...")
             capture_specific_packet("01B3")
             print("="*60)
             
