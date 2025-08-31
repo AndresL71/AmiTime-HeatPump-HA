@@ -65,6 +65,7 @@ MQTT address and name/password
 	Delta T of cooling：at 382
 
 Package 0143
+
 	Outdoor ambient temp. (Ta)：10
 	DHW Temp.(TW)：14
 	Cooling water temp：18
