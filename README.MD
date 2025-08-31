@@ -32,7 +32,7 @@ MQTT address and name/password
 
 #Offsets
 	
-	Offsets 01b3
+01b3
 
 	Unit ON OFF：at 2 (1=on 0=off)
 	Working Mode: at 6 -- (1=DHW, 2=heating, 3=cooling)
@@ -63,5 +63,31 @@ MQTT address and name/password
 
 	Cooling set temp.：at 378
 	Delta T of cooling：at 382
+
+Package 0143
+	Outdoor ambient temp. (Ta)：10
+	DHW Temp.(TW)：14
+	Cooling water temp：18
+	Water outlet temp.：22
+	Water inlet temp.：26
+	room temperature：54
+
+	AC input voltage：214
+	AC input current：218
+	Compressor frequency limit at current time：222
+	Compressor frequency：226
+	Low pressure：278
+	High pressure：282
+	Outdoor Ambient Temp (2da):254
+	Outdoor Coil temp.: 258
+	Outdoor gas discharge temp：262
+	Outdoor gas suction temp.266
+
+	Outdoor unit operating mode: 210
+	DHW working state：174 (on/off)  
+	Heating working state：178 (on/off) 
+	Cooling working state：182 (on/off) ??
+	Defrosting State : 286 (on/off) ??
+
 
 
