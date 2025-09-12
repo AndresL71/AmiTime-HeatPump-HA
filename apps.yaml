@@ -1,0 +1,12 @@
+heatpump_bridge:
+  module: heatpump_bridge
+  class: HeatpumpBridge
+  mqtt_broker: !secret hp_mqtt_broker
+  mqtt_port: 1883
+  mqtt_user: !secret hp_mqtt_user
+  mqtt_pass: !secret hp_mqtt_pass
+  device_id: heatpump_001
+  heatpump_ip: xx.x.x.xx
+  mn: "xxxxx" #<--- from your cookie
+  devid: "1"
+  cookie_raw: !secret hp_cookie_raw
