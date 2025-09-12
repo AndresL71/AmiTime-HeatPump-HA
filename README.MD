@@ -1,9 +1,12 @@
-For AmiTime Heatpump, Monoblock, R32
+For AmiTime Heatpump HeatLITE, Monoblock, R32
 such as: PAVH15/19 -- mutiple vendors, HeatThermo Hoffmann, Recal --  
 
 reading most sensors, and set temperatures locally, directly from the Pumps Wifi using the serial port provided in the usr-c210 configuration page as socket A, TCP server.
 Without having to go to  www.myheatpump.com.
-Not able to write values still
+
+heatpump_bridge.py , reads valued fron local usr-c210 in controller, and writes to myheatpump.com using API. You need to enable Remember Me en the webpage and retrive raw cookien in your browser(F12/network POST)
+
+Configure apps.yaml and secrets.yaml and use it in AppDaemon in HomeAssistant
 
 #  heatpump.py
 
