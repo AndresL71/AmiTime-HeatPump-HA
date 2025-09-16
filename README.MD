@@ -1,61 +1,78 @@
-Home Assistant Heat Pump Bridge (AppDaemon)
+# Home Assistant Heat Pump Bridge (AppDaemon)
 
 An AppDaemon app that:
+- Reads **local** TCP packets from an AmiTime/compatible Wi-Fi adapter (`0x0143` realtime & `0x01B3` setpoints).
+- Publishes **MQTT Discovery** sensors & controls to Home Assistant.
+- Sends **write commands** to the vendor **cloud API** (optional) using your session cookie.
+- Calculates **thermal power** and **COP** (heating/cooling) from measured temps, estimated/real electrical power, and configurable water flow.
 
-Reads local TCP packets from an AmiTime/compatible Wi-Fi adapter (0x0143 realtime & 0x01B3 setpoints).
+Tested on **Home Assistant OS (Supervised)** with the **AppDaemon** add-on.
 
-Publishes MQTT Discovery sensors & controls to Home Assistant.
+> ⚠️ Disclaimer  
+> You are responsible for your own account/cookie usage and equipment. Use at your own risk. This project is not affiliated with any manufacturer.
 
-Sends write commands to the vendor cloud API (optional) using your session cookie.
+---
 
-Calculates thermal power and COP (heating/cooling) from measured temps, estimated/real electrical power, and configurable water flow.
+## Features
 
-Tested on Home Assistant OS (Supervised) with the AppDaemon add-on.
+- MQTT Discovery for:
+  - Temperatures, pressures, electrical readings, compressor frequency
+  - Binary states (heating/cooling/DHW/defrost)
+  - Heating curve points
+  - Working mode + derived `working_state` (`heating` / `cooling` / `dhw` / `idle`)
+- Controls (MQTT → cloud API):
+  - Power (par1), Mode (par2), setpoints, delta-T, low-noise, heating curve points
+- COP & power:
+  - `electrical_power_w` (from V × A × PF or external sensor later)
+  - `thermal_power_heating_w`, `thermal_power_cooling_w`
+  - `cop_heating`, `cop_cooling`
+- Resilient socket loop with backoff; retained availability topic.
 
-⚠️ Disclaimer
-You are responsible for your own account/cookie usage and equipment. Use at your own risk. This project is not affiliated with any manufacturer.
+---
 
-Features
+## Repository layout
 
-MQTT Discovery for:
+homeassistant-heatpump-bridge/
+├─ README.md
+├─ LICENSE
+├─ .gitignore
+└─ appdaemon/
+├─ appdaemon.yaml
+└─ apps/
+├─ apps.yaml
+├─ secrets.example.yaml
+└─ heatpump_bridge.py
 
-Temperatures, pressures, electrical readings, compressor frequency
 
-Binary states (heating/cooling/DHW/defrost)
 
-Heating curve points
+---
 
-Working mode + derived working_state (heating / cooling / dhw / idle)
+## Requirements
 
-Controls (MQTT → cloud API):
+- Home Assistant with the **AppDaemon** add-on
+- MQTT broker (e.g., Mosquitto)
+- Network access to the heat pump adapter (default IP/port are configurable)
+- A valid **raw** session cookie string for the cloud website if you want remote writes
 
-Power (par1), Mode (par2), setpoints, delta-T, low-noise, heating curve points
+---
 
-COP & power:
+## Install
 
-electrical_power_w (from V × A × PF or external sensor later)
+1. **Copy files** (recommended structure):
 
-thermal_power_heating_w, thermal_power_cooling_w
+   - Put the contents of this repo into your HA config. If you cloned to your PC first, copy `appdaemon/*` into the HA `/config` share so that:
+     ```
+     /config/appdaemon.yaml
+     /config/apps/apps.yaml
+     /config/apps/heatpump_bridge.py
+     /config/apps/secrets.yaml   (you will create this from the example)
+     ```
 
-cop_heating, cop_cooling
+2. **Enable AppDaemon add-on**  
+   Supervisor → Add-on Store → AppDaemon → Install → Start.
 
-Resilient socket loop with backoff; retained availability topic.
-
-Requirements
-
-Home Assistant with the AppDaemon add-on
-
-MQTT broker (e.g., Mosquitto)
-
-Network access to the heat pump adapter (default IP/port are configurable)
-
-A valid raw session cookie string for the cloud website if you want remote writes
-
-Install
-
-Copy files (recommended structure):
-
-Put the contents of this repo into your HA config. If you cloned to your PC first, copy appdaemon/* into the HA /config share so that:
+3. **Create secrets**  
+   Copy the template and edit values:
 
 
 
@@ -68,13 +85,8 @@ such as: PAVH15/19 -- mutiple vendors, HeatThermo Hoffmann, Recal --
 reading most sensors, and set temperatures locally, directly from the Pumps Wifi using the serial port provided in the usr-c210 configuration page as socket A, TCP server.
 Without having to go to  www.myheatpump.com.
 
-# heatpump_bridge.py
-reads valued fron local usr-c210 in controller, and writes to myheatpump.com using API. You need to enable Remember Me en the webpage and retrive raw cookien in your browser(F12/network POST)
 
-Configure apps.yaml and secrets.yaml and use it in AppDaemon in HomeAssistant
-
-#  heatpump.py
-
+#  heatpump.py <-- this is a script to test the serial socket reading sensors. Run it standalone in terminal in your pc or HA
 
 # modify in script :
 
@@ -100,7 +112,7 @@ MQTT address and name/password
 
 #Offsets
 	
-01b3
+01b3 -- this packet returns settings
 
 	Unit ON OFF：at 2 (1=on 0=off)
 	Working Mode: at 6 -- (1=DHW, 2=heating, 3=cooling)
@@ -132,7 +144,7 @@ MQTT address and name/password
 	Cooling set temp.：at 378
 	Delta T of cooling：at 382
 
-Package 0143
+Package 0143 -- sensor values
 
 	Outdoor ambient temp. (Ta)：10
 	DHW Temp.(TW)：14
