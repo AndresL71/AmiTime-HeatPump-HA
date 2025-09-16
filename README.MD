@@ -32,18 +32,18 @@ Tested on **Home Assistant OS (Supervised)** with the **AppDaemon** add-on.
 
 ## Repository layout
 
+```
 homeassistant-heatpump-bridge/
-├─ README.md
-├─ LICENSE
-├─ .gitignore
-└─ appdaemon/
-├─ appdaemon.yaml
-└─ apps/
-├─ apps.yaml
-├─ secrets.example.yaml
-└─ heatpump_bridge.py
-
-
+├── README.md
+├── LICENSE
+├── .gitignore
+└── appdaemon/
+    ├── appdaemon.yaml
+    └── apps/
+        ├── apps.yaml
+        ├── secrets.example.yaml
+        └── heatpump_bridge.py
+```
 
 ---
 
@@ -74,17 +74,13 @@ homeassistant-heatpump-bridge/
 3. **Create secrets**  
    Copy the template and edit values:
 
-
-
-
-
+---
 
 For AmiTime Heatpump HeatLITE, Monoblock, R32
 such as: PAVH15/19 -- mutiple vendors, HeatThermo Hoffmann, Recal --  
 
 reading most sensors, and set temperatures locally, directly from the Pumps Wifi using the serial port provided in the usr-c210 configuration page as socket A, TCP server.
 Without having to go to  www.myheatpump.com.
-
 
 #  heatpump.py <-- this is a script to test the serial socket reading sensors. Run it standalone in terminal in your pc or HA
 
@@ -97,7 +93,6 @@ Your usr-c210 ip
 your usr-c210 open port (TCP server)
 
 MQTT address and name/password
-
 
 # Configuration
 	HEATPUMP_IP = "10.0.0.73"
@@ -170,5 +165,4 @@ Package 0143 -- sensor values
 	Cooling working state：182 (on/off) ??
 	Defrosting State : 286 (on/off) ??
 
-
-
+```
