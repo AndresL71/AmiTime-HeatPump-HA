@@ -1,3 +1,67 @@
+Home Assistant Heat Pump Bridge (AppDaemon)
+
+An AppDaemon app that:
+
+Reads local TCP packets from an AmiTime/compatible Wi-Fi adapter (0x0143 realtime & 0x01B3 setpoints).
+
+Publishes MQTT Discovery sensors & controls to Home Assistant.
+
+Sends write commands to the vendor cloud API (optional) using your session cookie.
+
+Calculates thermal power and COP (heating/cooling) from measured temps, estimated/real electrical power, and configurable water flow.
+
+Tested on Home Assistant OS (Supervised) with the AppDaemon add-on.
+
+⚠️ Disclaimer
+You are responsible for your own account/cookie usage and equipment. Use at your own risk. This project is not affiliated with any manufacturer.
+
+Features
+
+MQTT Discovery for:
+
+Temperatures, pressures, electrical readings, compressor frequency
+
+Binary states (heating/cooling/DHW/defrost)
+
+Heating curve points
+
+Working mode + derived working_state (heating / cooling / dhw / idle)
+
+Controls (MQTT → cloud API):
+
+Power (par1), Mode (par2), setpoints, delta-T, low-noise, heating curve points
+
+COP & power:
+
+electrical_power_w (from V × A × PF or external sensor later)
+
+thermal_power_heating_w, thermal_power_cooling_w
+
+cop_heating, cop_cooling
+
+Resilient socket loop with backoff; retained availability topic.
+
+Requirements
+
+Home Assistant with the AppDaemon add-on
+
+MQTT broker (e.g., Mosquitto)
+
+Network access to the heat pump adapter (default IP/port are configurable)
+
+A valid raw session cookie string for the cloud website if you want remote writes
+
+Install
+
+Copy files (recommended structure):
+
+Put the contents of this repo into your HA config. If you cloned to your PC first, copy appdaemon/* into the HA /config share so that:
+
+
+
+
+
+
 For AmiTime Heatpump HeatLITE, Monoblock, R32
 such as: PAVH15/19 -- mutiple vendors, HeatThermo Hoffmann, Recal --  
 
