@@ -124,10 +124,10 @@ MQTT address and name/password
 	Heating curve water temp. 2 at 350
 	Heating curve ambient temp. 3 at 354
 	Heating curve water temp. 3 at 358
-	Heating curve ambient temp. 3 at 362
-	Heating curve water temp. 3 at 366
-	Heating curve ambient temp. 2 at 346
-	Heating curve water temp. 2 at 350
+	Heating curve ambient temp. 4 at 362
+	Heating curve water temp. 4 at 366
+	Heating curve ambient temp. 5 at 346
+	Heating curve water temp. 5 at 350
 
 	DHW set temp.：at 166
 	Delta T of DHW：at 170
